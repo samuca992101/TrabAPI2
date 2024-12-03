@@ -1,62 +1,78 @@
 const express = require('express');
-const catalogo = require('./crud'); // Importe o arquivo CRUD
+const { inserir, listarFilmes, buscarPorId, atualizar, deletar } = require('./crud');  // Importando as funções de CRUD de filmes
+
 const app = express();
 const port = 3000;
 
-// Middleware para parsing de JSON
-app.use(express.json()); // Deve estar aqui, antes das rotas
+app.use(express.json());  // Para lidar com requisições JSON
 
-// Rota raiz
-app.get('/', (req, res) => {
-    res.send('API do Catálogo Funcionando!');
+// Endpoint para inserir um filme
+app.post('/filmes', async (req, res) => {
+  try {
+    const filme = req.body;
+    const filmeInserido = await inserir(filme);
+    res.status(201).json(filmeInserido);  // Responde com o filme inserido
+  } catch (error) {
+    console.error("Erro ao inserir filme:", error);
+    res.status(500).json({ message: "Erro ao inserir filme" });
+  }
 });
 
-// Rota para adicionar um item
-app.post('/catalogo', (req, res) => {
-    const { titulo, genero, tipo } = req.body;
+// Endpoint para listar todos os filmes
+app.get('/filmes', async (req, res) => {
+  try {
+    const filmes = await listarFilmes();
+    res.status(200).json(filmes);  // Responde com a lista de filmes
+  } catch (error) {
+    console.error("Erro ao listar filmes:", error);
+    res.status(500).json({ message: "Erro ao listar filmes" });
+  }
+});
 
-    // Verifica se todos os campos obrigatórios estão presentes
-    if (!titulo || !genero || !tipo) {
-        return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
-    } else {
-        const novoItem = catalogo.adicionarItemDeMidia(titulo, genero, tipo);
-        return res.status(201).json({
-            message: 'Item adicionado com sucesso!',
-            item: novoItem // Inclui o novo item na resposta
-        });
+// Endpoint para buscar um filme por ID
+app.get('/filmes/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const filme = await buscarPorId(id);
+    if (!filme) {
+      return res.status(404).json({ message: "Filme não encontrado" });
     }
+    res.status(200).json(filme);  // Responde com o filme encontrado
+  } catch (error) {
+    console.error("Erro ao buscar filme:", error);
+    res.status(500).json({ message: "Erro ao buscar filme" });
+  }
 });
 
-// Rota para visualizar todos os itens
-app.get('/catalogo', (req, res) => {
-    const itens = catalogo.visualizarTodosOsItens();
-    res.status(200).json(itens);
+// Endpoint para atualizar um filme
+app.put('/filmes/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const filme = req.body;
+    const filmeAtualizado = await atualizar(id, filme);
+    res.status(200).json(filmeAtualizado);  // Responde com o filme atualizado
+  } catch (error) {
+    console.error("Erro ao atualizar filme:", error);
+    res.status(500).json({ message: "Erro ao atualizar filme" });
+  }
 });
 
-// Rota para atualizar um item por ID
-app.put('/catalogo/:id', (req, res) => {
-    const { id } = req.params;
-    const { titulo, genero, tipo } = req.body;
-    const itemAtualizado = catalogo.atualizarItemDeMidia(parseInt(id), titulo, genero, tipo);
-    if (itemAtualizado) {
-        res.status(200).json(itemAtualizado);
-    } else {
-        res.status(404).json({ error: 'Item não encontrado.' });
+// Endpoint para deletar um filme
+app.delete('/filmes/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const filmeDeletado = await deletar(id);
+    if (!filmeDeletado) {
+      return res.status(404).json({ message: "Filme não encontrado" });
     }
+    res.status(200).json(filmeDeletado);  // Responde com o filme deletado
+  } catch (error) {
+    console.error("Erro ao deletar filme:", error);
+    res.status(500).json({ message: "Erro ao deletar filme" });
+  }
 });
 
-// Rota para excluir um item por ID
-app.delete('/catalogo/:id', (req, res) => {
-    const { id } = req.params;
-    const itemRemovido = catalogo.excluirItemDeMidia(parseInt(id));
-    if (itemRemovido) {
-        res.status(200).json(itemRemovido);
-    } else {
-        res.status(404).json({ error: 'Item não encontrado.' });
-    }
-});
-
-// Inicia o servidor
+// Iniciar o servidor
 app.listen(port, () => {
-    console.log(`Servidor rodando em http://localhost:${port}`);
+  console.log(`Servidor rodando em http://localhost:${port}`);
 });
